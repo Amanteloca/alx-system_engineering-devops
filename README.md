@@ -1,1 +1,1 @@
-I love numbers
+Bye bye My first directory
