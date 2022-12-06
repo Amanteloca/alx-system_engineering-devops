@@ -1,1 +1,1 @@
-read
+In this sub-project I will be learning primarily about expansions in bash. I will be learning variable expansion as well as arithmetic expansion and even command expansion. All of these techniques will be invaluable using shell dynamically.
