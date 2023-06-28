@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Installs, configures, and starts the server
+# Install nginx
+sudo apt-get -y update
+sudo apt-get -y install nginx -y
+
+# Start nginx service
+sudo service nginx start
+
+# Configure nginx to listen on port 80
+siudo sed -i 's/listen\s*80;/listen 80 default_server;/g' /etc/nginx/sites-available/default
+
+#configure error page
+echo "Ceci n'est pas une page" > 404.html
+sudo mv 404.html /var/www/html
+
+# Configure nginx to serve the redirect_me file
+sudo bash -c 'cat > /etc/nginx/sites-available/default << EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
+
+    server_name _;
+    
+    error_page 404 /404.html;
+    location = /404.html{
+       internal;
+    }
+
+    location /redirect_me {
+        return 301 http://www.redirectedpage.com/;
+    }
+}
+EOF'
+
+# Test the nginx configuration for syntax errors
+sudo nginx -t
+
+# Restart nginx service if the configuration is valid
+if [ $? -eq 0 ]
+then
+    sudo service nginx restart
+else
+    echo "Nginx configuration is invalid. Please check the configuration file."
+fi
+
+# Create index file with "Hello World!" message
+echo "Hello World!" | sudo tee /var/www/html/index.nginx-debian.html > /dev/null
+
+# Create redirect_me file with redirect information
+echo -e "HTTP/1.1 301 Moved Permanently\r\nLocation: http://www.redirectedpage.com/\r\n\r\n" | sudo tee /var/www/html/redirect_me > /dev/null
+
+#Restart nginx service
+sudo service nginx restart
+
+
