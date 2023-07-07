@@ -1,29 +1,45 @@
 #!/usr/bin/env bash
-# 404 Not Found Page
+# Installs, configures, and starts the server
+sudo apt-get update
+sudo apt-get -y install nginx
+sudo ufw allow 'Nginx HTTP'
+mkdir -p /var/www/html/
+sudo chmod -R 755 /var/www
 
-apt-get update
-apt-get install -y nginx
+# Create index file with "Hello World!" message
+echo "Hello World!" | sudo tee /var/www/html/index.nginx-debian.html > /dev/null
 
-touch /var/www/html/index.html /var/www/html/404.html
-echo "Hello World!" > /var/www/html/index.html
-echo "Ceci n'est pas une page" > /var/www/html/404.html
+# Create default Nginx configuration file
+sudo mkdir -p /etc/nginx/sites-enabled/
+sudo touch /etc/nginx/sites-enabled/default
 
-printf %s "server {
-    listen 80;
-    listen [::]:80 default_server;
-    add_header X-Served-By $HOSTNAME;
-    root   /var/www/html/;
-    index  index.html index.htm;
+SERVER_CONFIG=\
+"server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        root /var/www/html;
+        index index.html index.htm index.nginx-debian.html;
+        server_name _;
+        location / {
+                try_files \$uri \$uri/ =404;
+        }
+        if (\$request_filename ~ redirect_me){
+                rewrite ^ http://www.redirectedpage.com;
+        }
+}"
 
-    location /redirect_me {
-        return 301 https://www.youtube.com/watch?v=TfgBHC5gvTI;
-    }
+sudo bash -c "echo -e '$SERVER_CONFIG' > /etc/nginx/sites-enabled/default"
 
-    error_page 404 /404.html;
-    location /404 {
-        root /var/www/html/;
-        internal;
-    }
-}" > /etc/nginx/sites-available/default
+# Create Nginx configuration file
+sudo touch /etc/nginx/nginx.conf
 
-service nginx restart
+# Add a custom header to Nginx config
+HOSTNAME=$(hostname)
+sudo sed -i "s/include \/etc\/nginx\/sites-enabled\/\*;/include \/etc\/nginx\/sites-enabled\/\*;\n\tadd_header X-Served-By \"$HOSTNAME\";/" /etc/nginx/nginx.conf
+
+# Start or restart Nginx service
+if [ "$(pgrep -c nginx)" -le 0 ]; then
+    sudo service nginx start
+else
+    sudo service nginx restart
+fi
