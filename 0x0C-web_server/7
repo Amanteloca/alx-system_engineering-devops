@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Update the package list
+sudo apt update
+
+# Install Nginx
+sudo apt install -y nginx
+
+# Configure Nginx to listen on port 80
+sudo sed -i 's/listen 80;/listen 80 default_server;/g' /etc/nginx/sites-available/default
+
+# Create a root page with "Hello World!"
+echo "Hello World!" | sudo tee /var/www/html/index.html > /dev/null
+
+# Create a redirection configuration for /redirect_me
+echo -e "server {\n\tlisten 80;\n\tserver_name _;\n\tlocation /redirect_me {\n\t\treturn 301 https://www.example.com/another-page;\n\t}\n}" | sudo tee /etc/nginx/sites-available/redirect > /dev/null
+
+# Enable the redirection configuration
+sudo ln -s /etc/nginx/sites-available/redirect /etc/nginx/sites-enabled/
+sudo nginx -t && sudo nginx -s reload
+
+# Script complete
+echo "Nginx has been installed and configured for redirection."
